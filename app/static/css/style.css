@@ -600,3 +600,40 @@ input::placeholder { color: var(--muted); font-family: var(--font-body); font-si
   color: var(--accent);
   letter-spacing: 0.06em;
 }
+
+/* ── GITHUB LINK ── */
+#github-link {
+  margin-left: auto;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+#github-link:hover { color: var(--accent); }
+
+/* ── GITHUB LINK ── */
+#credit {
+  flex-wrap: wrap;
+}
+
+#github-link {
+  margin-left: auto;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+#github-link:hover { color: var(--accent); }
+
+/* ── GITHUB LINK ── */
+#github-link {
+  margin-left: auto;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+#github-link:hover { color: var(--accent); }

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GridPoint — Location Format Explorer</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+
+      <!-- Brand + toolbar -->
+      <div id="brand">
+        <span class="brand-icon">⊕</span>
+        <div class="brand-text">
+          <div class="brand-title">GRIDPOINT</div>
+          <div class="brand-sub">Location Format Explorer</div>
+        </div>
+        <div class="brand-tools">
+          <button id="locate-me-btn" title="Use my location">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="3" fill="currentColor"/>
+              <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="10" y1="1" x2="10" y2="4.5" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="10" y1="15.5" x2="10" y2="19" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="1" y1="10" x2="4.5" y2="10" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="15.5" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </button>
+          <button id="theme-toggle" title="Toggle day/night">
+            <span class="theme-icon">☀</span><span class="theme-label">DAY</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Map type selector -->
+      <div id="map-type-bar">
+        <span class="bar-label">MAP</span>
+        <div class="map-type-btns">
+          <button class="map-type-btn active" data-type="street">Street</button>
+          <button class="map-type-btn" data-type="satellite">Satellite</button>
+          <button class="map-type-btn" data-type="topo">Topo</button>
+          <button class="map-type-btn" data-type="os">OSM</button>
+        </div>
+      </div>
+
+      <!-- Grid overlays -->
+      <div id="grid-panel">
+        <div class="panel-label">GRID OVERLAYS</div>
+        <div class="grid-toggle-list">
+          <button class="grid-toggle-btn" data-grid="latlon">
+            <span class="grid-swatch" style="background:#60a5fa"></span>Lat / Lon
+          </button>
+          <button class="grid-toggle-btn" data-grid="maidenhead">
+            <span class="grid-swatch" style="background:#00e5c0"></span>Maidenhead
+          </button>
+          <button class="grid-toggle-btn gb-only" data-grid="osgrid">
+            <span class="grid-swatch" style="background:#ff6b35"></span>OS Grid
+          </button>
+          <button class="grid-toggle-btn gb-only" data-grid="wab">
+            <span class="grid-swatch" style="background:#f5c518"></span>WAB Square
+          </button>
+          <button class="grid-toggle-btn" data-grid="pluscode">
+            <span class="grid-swatch" style="background:#a78bfa"></span>Plus Codes
+          </button>
+          <button class="grid-toggle-btn" data-grid="cqzone">
+            <span class="grid-swatch" style="background:#34d399"></span>CQ Zone
+          </button>
+          <button class="grid-toggle-btn" data-grid="ituzone">
+            <span class="grid-swatch" style="background:#f472b6"></span>ITU Zone
+          </button>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div id="input-panel">
+        <div class="panel-label">INPUT FORMAT</div>
+        <select id="format-select">
+          <option value="latlon_dd">Lat/Lon — Decimal Degrees</option>
+          <option value="latlon_dms">Lat/Lon — Degrees Minutes Seconds</option>
+          <option value="latlon_dm">Lat/Lon — Degrees Decimal Minutes</option>
+          <option value="maidenhead">Maidenhead Grid Locator</option>
+          <option value="postcode">UK Postcode</option>
+          <option value="town">Town / Place Name</option>
+          <option value="osgrid">OS Grid Reference</option>
+          <option value="wab">WAB Square</option>
+          <option value="pluscode">Plus Code (Open Location Code)</option>
+        </select>
+
+        <div id="input-area"></div>
+
+        <button id="go-btn">
+          <span>LOCATE</span>
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="8" cy="8" r="2" fill="currentColor"/>
+            <line x1="8" y1="1" x2="8" y2="4" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="8" y1="12" x2="8" y2="15" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="1" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="12" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </button>
+        <div id="error-msg"></div>
+      </div>
+
+      <!-- Results -->
+      <div id="results-panel" class="hidden">
+        <div class="panel-label">ALL FORMATS <span id="results-coords"></span></div>
+        <div id="results-grid"></div>
+      </div>
+
+      <div id="map-hint">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1L10 6H15L11 9.5L12.5 15L8 12L3.5 15L5 9.5L1 6H6L8 1Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+        </svg>
+        Click anywhere on the map to decode that location
+      </div>
+
+      <div id="credit">
+        <span>Built by</span>
+        <a href="https://m0lzn.com" target="_blank" rel="noopener">
+          James Marshall <strong>M0LZN</strong>
+        </a>
+      </div>
+    </aside>
+
+    <div id="map"></div>
+
+    <div id="loading" class="hidden">
+      <div class="loader-ring"></div>
+      <span>Resolving location…</span>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/conversions.js"></script>
+  <script src="/js/grids.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

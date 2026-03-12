@@ -1,0 +1,18 @@
+services:
+  gridpoint:
+    build: .
+    image: gridpoint:latest
+    container_name: gridpoint
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      # Optional: set your What3Words API key here to enable W3W lookups
+      # Get a free key at https://developer.what3words.com
+      - W3W_API_KEY=${W3W_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

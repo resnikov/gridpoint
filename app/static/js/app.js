@@ -222,6 +222,46 @@ renderInputs();
 function showLoading(v) { loading.classList.toggle('hidden', !v); }
 function setError(msg)  { errorMsg.textContent = msg; }
 
+// ── MOBILE DRAWER ────────────────────────────────────────────
+(function setupDrawer() {
+  const sidebar = document.getElementById('sidebar');
+  const brand   = document.getElementById('brand');
+
+  function isMobile() { return window.innerWidth < 600; }
+
+  function openDrawer()  { sidebar.classList.add('drawer-open'); }
+  function closeDrawer() { sidebar.classList.remove('drawer-open'); }
+  function toggleDrawer(){ sidebar.classList.toggle('drawer-open'); }
+
+  // Tap the brand bar to toggle on mobile
+  brand.addEventListener('click', () => { if (isMobile()) toggleDrawer(); });
+
+  // After locating / showing results, open the drawer so user sees them
+  const _origShowPoint = window._showPointHook;
+
+  // Close drawer when user taps the map (so they can see the full map)
+  document.getElementById('map').addEventListener('click', () => {
+    if (isMobile()) closeDrawer();
+  });
+
+  // Touch swipe down on sidebar to collapse
+  let touchStartY = 0;
+  sidebar.addEventListener('touchstart', e => {
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  sidebar.addEventListener('touchend', e => {
+    if (!isMobile()) return;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (dy > 60)  closeDrawer(); // swipe down  → collapse
+    if (dy < -60) openDrawer();  // swipe up    → expand
+  }, { passive: true });
+
+  // Re-check on resize
+  window.addEventListener('resize', () => {
+    if (!isMobile()) sidebar.classList.remove('drawer-open');
+  });
+})();
+
 // ── GEOCODING ────────────────────────────────────────────────
 async function geocodeNominatim(query) {
   const url = `${NOMINATIM}/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
@@ -277,6 +317,10 @@ function showPoint(lat, lon) {
   map.setView([lat, lon], Math.max(map.getZoom(), 12));
   placeMarker(lat, lon);
   renderResults(lat, lon);
+  // On mobile, open the drawer so user can see the results
+  if (window.innerWidth < 600) {
+    document.getElementById('sidebar').classList.add('drawer-open');
+  }
 }
 
 function renderResults(lat, lon) {

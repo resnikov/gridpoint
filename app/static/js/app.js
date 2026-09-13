@@ -4,6 +4,18 @@
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
 
+// ── HTML ESCAPING ────────────────────────────────────────────
+// Anything that originates outside this file (Nominatim place names,
+// API responses) must pass through here before touching innerHTML.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── THEME ────────────────────────────────────────────────────
 let isDark = true;
 
@@ -333,12 +345,14 @@ function renderResults(lat, lon) {
     const div = document.createElement('div');
     div.className = 'result-item';
     div.style.animationDelay = `${i * 40}ms`;
-    const safeVal = item.value.replace(/'/g, "\\'");
     div.innerHTML = `
-      <span class="result-label">${item.label}</span>
-      <span class="result-value">${item.value}</span>
-      <button class="copy-btn" title="Copy" onclick="copyVal(this,'${safeVal}')">⧉</button>
+      <span class="result-label">${escapeHtml(item.label)}</span>
+      <span class="result-value">${escapeHtml(item.value)}</span>
+      <button class="copy-btn" title="Copy">⧉</button>
     `;
+    const btn = div.querySelector('.copy-btn');
+    btn.dataset.value = item.value;
+    btn.addEventListener('click', () => copyVal(btn, btn.dataset.value));
     resultsGrid.appendChild(div);
   });
 }
@@ -351,7 +365,6 @@ function copyVal(btn, val) {
     setTimeout(() => { item.classList.remove('copied'); btn.textContent = '⧉'; }, 1200);
   });
 }
-window.copyVal = copyVal;
 
 // ── MAP CLICK ────────────────────────────────────────────────
 map.on('click', async (e) => {
@@ -364,7 +377,7 @@ map.on('click', async (e) => {
     if (data.display_name) {
       marker.bindPopup(`
         <div class="popup-label">NEAREST PLACE</div>
-        <div style="font-size:13px;margin-top:4px;max-width:220px;white-space:normal">${data.display_name}</div>
+        <div style="font-size:13px;margin-top:4px;max-width:220px;white-space:normal">${escapeHtml(data.display_name)}</div>
         <div class="popup-label" style="margin-top:8px">COORDINATES</div>
         <div class="popup-coord">${lat.toFixed(6)}, ${lon.toFixed(6)}</div>
       `).openPopup();

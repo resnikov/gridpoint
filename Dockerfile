@@ -1,9 +1,14 @@
 FROM python:3.12-slim
 
+# Run as an unprivileged user rather than root
+RUN useradd --create-home --uid 10001 gridpoint
+
 WORKDIR /app
 
 # No external Python dependencies — stdlib only
-COPY app/ ./
+COPY --chown=gridpoint:gridpoint app/ ./
+
+USER gridpoint
 
 EXPOSE 8080
 

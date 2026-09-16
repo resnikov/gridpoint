@@ -30,35 +30,37 @@ function applyTheme(dark) {
   localStorage.setItem('gp-theme', dark ? 'dark' : 'light');
 }
 
-// ── MAP TILE LAYERS ──────────────────────────────────────────
+// ── MAP TILE LAYERS ──────────────────────────────
+// Every source here is keyless. CARTO basemaps were removed because they
+// now require an API key. None of these ship a dark variant, so dark mode
+// dims them with a CSS overlay instead (see darkFilter).
 const TILE_LAYERS = {
   street: {
     label: 'Street',
-    dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attr:  '© OpenStreetMap © CARTO',
+    url:   'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attr:  '© OpenStreetMap contributors',
+    maxZoom: 19,
+    darkFilter: true,
   },
   satellite: {
     label: 'Satellite',
-    dark:  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    light: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    url:   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attr:  '© Esri, Maxar, Earthstar Geographics',
+    maxZoom: 19,
+    darkFilter: true,
   },
   topo: {
     label: 'Topo',
-    dark:  'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    light: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    url:   'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
     attr:  '© OpenStreetMap © OpenTopoMap',
-  },
-  os: {
-    label: 'OS',
-    dark:  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    light: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attr:  '© OpenStreetMap contributors',
+    maxZoom: 17,
+    darkFilter: true,
   },
 };
 
-let currentMapType = 'street';
+const DEFAULT_MAP_TYPE = 'street';
+
+let currentMapType = DEFAULT_MAP_TYPE;
 let tileLayer = null;
 
 // ── MAP SETUP ────────────────────────────────────────────────
@@ -72,7 +74,16 @@ L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 // ── GRID OVERLAYS ─────────────────────────────────────────
 const grids = GridOverlays.create(map);
-const activeGrids = new Set(JSON.parse(localStorage.getItem('gp-grids') || '[]'));
+
+// Drop saved keys for overlays that no longer exist, and tolerate a corrupt
+// or absent value rather than taking the whole app down at load.
+function loadGridPrefs() {
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('gp-grids') || '[]'); } catch (e) { /* ignore */ }
+  return new Set(Array.isArray(saved) ? saved.filter(k => k in grids) : []);
+}
+
+const activeGrids = loadGridPrefs();
 
 function saveGridPrefs() {
   localStorage.setItem('gp-grids', JSON.stringify([...activeGrids]));
@@ -94,17 +105,24 @@ document.querySelectorAll('.grid-toggle-btn').forEach(btn => {
 });
 
 function updateTileLayer() {
-  const cfg = TILE_LAYERS[currentMapType];
-  const url = isDark ? cfg.dark : cfg.light;
+  // A stale saved preference (e.g. a layer that has since been removed)
+  // must not leave the map with no tiles.
+  let cfg = TILE_LAYERS[currentMapType];
+  if (!cfg) {
+    currentMapType = DEFAULT_MAP_TYPE;
+    cfg = TILE_LAYERS[currentMapType];
+  }
   if (tileLayer) map.removeLayer(tileLayer);
-  tileLayer = L.tileLayer(url, { attribution: cfg.attr, maxZoom: 19 }).addTo(map);
-  // Satellite has no dark variant so overlay a dark filter in dark mode
-  document.getElementById('map').classList.toggle('map-dark-overlay',
-    isDark && (currentMapType === 'satellite' || currentMapType === 'topo' || currentMapType === 'os')
-  );
+  tileLayer = L.tileLayer(cfg.url, {
+    attribution: cfg.attr,
+    maxZoom: cfg.maxZoom || 19,
+  }).addTo(map);
+  document.getElementById('map').classList.toggle('map-dark-overlay', isDark && !!cfg.darkFilter);
 }
 
-updateTileLayer();
+// No initial call here: init() below always runs applyTheme(), which adds the
+// tile layer once the saved map type is known. Calling it here as well built
+// the layer twice on every load.
 
 let marker = null;
 const customIcon = L.divIcon({ className: 'custom-marker', iconSize: [14, 14], iconAnchor: [7, 7] });
@@ -248,9 +266,6 @@ function setError(msg)  { errorMsg.textContent = msg; }
   // Tap the brand bar to toggle on mobile
   brand.addEventListener('click', () => { if (isMobile()) toggleDrawer(); });
 
-  // After locating / showing results, open the drawer so user sees them
-  const _origShowPoint = window._showPointHook;
-
   // Close drawer when user taps the map (so they can see the full map)
   document.getElementById('map').addEventListener('click', () => {
     if (isMobile()) closeDrawer();
@@ -278,16 +293,25 @@ function setError(msg)  { errorMsg.textContent = msg; }
 async function geocodeNominatim(query) {
   const url = `${NOMINATIM}/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
   const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+  // Nominatim answers a rate-limited request with HTML, so parsing first
+  // surfaced a raw JSON SyntaxError to the user.
+  if (!res.ok) {
+    throw new Error(res.status === 429
+      ? 'Place lookup is rate limited right now — please wait a moment.'
+      : `Place lookup failed (HTTP ${res.status})`);
+  }
   const data = await res.json();
   if (!data.length) throw new Error(`No results found for: "${query}"`);
   return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
 }
 
-
-
 async function resolvePostcode(postcode) {
-  const clean = postcode.replace(/\s+/g, '').toUpperCase();
-  const res  = await fetch(`https://api.postcodes.io/postcodes/${clean}`);
+  const clean = String(postcode || '').replace(/\s+/g, '').toUpperCase();
+  if (!/^[A-Z0-9]{5,7}$/.test(clean)) throw new Error(`Not a valid UK postcode: ${postcode}`);
+  // Encode the segment: an unencoded value can otherwise rewrite the request path.
+  const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(clean)}`);
+  // 404 carries a JSON body with status, so let that fall through to the check below.
+  if (!res.ok && res.status !== 404) throw new Error(`Postcode lookup failed (HTTP ${res.status})`);
   const data = await res.json();
   if (data.status !== 200) throw new Error(`Postcode not found: ${postcode}`);
   return { lat: data.result.latitude, lon: data.result.longitude };
@@ -314,6 +338,7 @@ async function locateAction() {
       case 'pluscode':   { const r = Conv.decodePlusCodes(inp1);       lat = r.lat; lon = r.lon; break; }
       default: throw new Error('Unknown format');
     }
+    assertLatLon(lat, lon);
     showPoint(lat, lon);
   } catch (e) {
     setError(e.message);
@@ -325,6 +350,17 @@ async function locateAction() {
 goBtn.addEventListener('click', locateAction);
 
 // ── SHOW POINT ───────────────────────────────────────────────
+// A parser that returns NaN or an out-of-range value must not reach Leaflet:
+// setView([NaN, NaN]) throws, and toFixed() would print "NaN" in the sidebar.
+function assertLatLon(lat, lon) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    throw new Error('That input did not resolve to a valid coordinate');
+  }
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    throw new Error(`Coordinate out of range: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+  }
+}
+
 function showPoint(lat, lon) {
   map.setView([lat, lon], Math.max(map.getZoom(), 12));
   placeMarker(lat, lon);
@@ -367,27 +403,50 @@ function copyVal(btn, val) {
 }
 
 // ── MAP CLICK ────────────────────────────────────────────────
-map.on('click', async (e) => {
-  const { lat, lng: lon } = e.latlng;
-  placeMarker(lat, lon);
-  renderResults(lat, lon);
-  try {
-    const res  = await fetch(`${NOMINATIM}/reverse?lat=${lat}&lon=${lon}&format=json`);
-    const data = await res.json();
-    if (data.display_name) {
+// Nominatim asks for at most one request per second, and a burst of clicks used
+// to fire one lookup each. Defer the lookup and abort any request the next click
+// supersedes — that also stops a slow reply for an earlier click opening its
+// popup on the marker for a later one.
+const REVERSE_DEBOUNCE_MS = 400;
+let reverseTimer = null;
+let reverseAbort = null;
+
+function queueReverseGeocode(lat, lon) {
+  clearTimeout(reverseTimer);
+  if (reverseAbort) reverseAbort.abort();
+  reverseTimer = setTimeout(async () => {
+    const ctl = new AbortController();
+    reverseAbort = ctl;
+    try {
+      const res = await fetch(
+        `${NOMINATIM}/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&format=json`,
+        { signal: ctl.signal, headers: { 'Accept-Language': 'en' } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      // A later click may have won the race while we were parsing.
+      if (ctl !== reverseAbort || !data.display_name || !marker) return;
       marker.bindPopup(`
         <div class="popup-label">NEAREST PLACE</div>
         <div style="font-size:13px;margin-top:4px;max-width:220px;white-space:normal">${escapeHtml(data.display_name)}</div>
         <div class="popup-label" style="margin-top:8px">COORDINATES</div>
         <div class="popup-coord">${lat.toFixed(6)}, ${lon.toFixed(6)}</div>
       `).openPopup();
-    }
-  } catch(_) { /* silent */ }
+    } catch (_) { /* aborted or offline — leave the marker without a popup */ }
+  }, REVERSE_DEBOUNCE_MS);
+}
+
+map.on('click', (e) => {
+  const { lat, lng: lon } = e.latlng;
+  placeMarker(lat, lon);
+  renderResults(lat, lon);
+  queueReverseGeocode(lat, lon);
 });
 
 // ── RESTORE SAVED PREFS & AUTO-LOCATE ────────────────────────
 (function init() {
-  const savedMapType   = localStorage.getItem('gp-maptype') || 'street';
+  const savedType      = localStorage.getItem('gp-maptype');
+  const savedMapType   = TILE_LAYERS[savedType] ? savedType : DEFAULT_MAP_TYPE;
   const savedTheme     = localStorage.getItem('gp-theme');      // null = never set
   const userHasSetTheme = savedTheme !== null;
 

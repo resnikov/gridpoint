@@ -586,16 +586,12 @@ input::placeholder { color: var(--muted); font-family: var(--font-body); font-si
 .gl-osgrid     { color: #ff6b35; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
 .gl-wab        { color: #f5c518; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
 .gl-pluscode   { color: #a78bfa; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
-.gl-cqzone     { color: #34d399; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
-.gl-ituzone    { color: #f472b6; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
 .gl-latlon     { color: #60a5fa; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
 
 [data-theme="light"] .gl-maidenhead { color: #008866; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
 [data-theme="light"] .gl-osgrid     { color: #c94010; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
 [data-theme="light"] .gl-wab        { color: #997700; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
 [data-theme="light"] .gl-pluscode   { color: #6d28d9; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
-[data-theme="light"] .gl-cqzone     { color: #065f46; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
-[data-theme="light"] .gl-ituzone    { color: #9d174d; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
 [data-theme="light"] .gl-latlon     { color: #1d4ed8; text-shadow: 0 0 3px rgba(255,255,255,0.9); }
 
 

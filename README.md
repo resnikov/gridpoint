@@ -18,12 +18,7 @@ A web application for converting between location formats and visualising points
 | Town / Place Name | ✅ | — |
 | OS Grid Reference | ✅ | ✅ |
 | WAB Square | ✅ | ✅ |
-| What3Words | ✅* | — |
-| CQ Zone | — | ✅ |
-| ITU Zone | — | ✅ |
 | Plus Code | ✅ | ✅ |
-
-*What3Words input requires an API key (free tier available).
 
 ## Quick Start
 
@@ -49,20 +44,6 @@ docker run -p 9000:8080 gridpoint
 # then open http://localhost:9000
 ```
 
-## What3Words Setup (Optional)
-
-1. Get a free API key at https://developer.what3words.com
-2. Set it in `docker-compose.yml`:
-   ```yaml
-   environment:
-     - W3W_API_KEY=your_key_here
-   ```
-   Or export it before running:
-   ```bash
-   export W3W_API_KEY=your_key_here
-   docker-compose up
-   ```
-
 ## Usage
 
 **To locate a point:**
@@ -79,10 +60,9 @@ docker run -p 9000:8080 gridpoint
 ## Notes
 
 - OS Grid Reference, WAB Square conversions apply to Great Britain only
-- What3Words input requires API key; all other formats work offline
 - UK Postcode lookup uses the free postcodes.io API
 - Town/place lookup uses OpenStreetMap Nominatim
-- CQ and ITU zones are calculated algorithmically (±1 zone accuracy near boundaries)
+- Map tiles come from OpenStreetMap, Esri and OpenTopoMap; none require an API key
 
 ## Running Without Docker
 

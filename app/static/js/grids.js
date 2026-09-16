@@ -393,39 +393,6 @@ const GridOverlays = (() => {
     }
   }
 
-
-  // ══════════════════════════════════════════════════════════
-  // CQ ZONES
-  // ══════════════════════════════════════════════════════════
-  class CQZoneGrid extends GridLayer {
-    constructor(map) { super(map, 'gl-cqzone'); }
-    _render() {
-      this._clear();
-      const b = this._bounds(), step = 10;
-      for (let la = snapDown(b.s, step); la < b.n; la += step)
-        for (let lo = snapDown(b.w, step); lo < b.e; lo += step)
-          this._addRect(la, lo, la + step, lo + step,
-            `CQ ${Conv.calcCQZone(la + step/2, lo + step/2)}`, '#34d399');
-    }
-  }
-
-
-  // ══════════════════════════════════════════════════════════
-  // ITU ZONES
-  // ══════════════════════════════════════════════════════════
-  class ITUZoneGrid extends GridLayer {
-    constructor(map) { super(map, 'gl-ituzone'); }
-    _render() {
-      this._clear();
-      const b = this._bounds(), step = 10;
-      for (let la = snapDown(b.s, step); la < b.n; la += step)
-        for (let lo = snapDown(b.w, step); lo < b.e; lo += step)
-          this._addRect(la, lo, la + step, lo + step,
-            `ITU ${Conv.calcITUZone(la + step/2, lo + step/2)}`, '#f472b6');
-    }
-  }
-
-
   // ── Factory ───────────────────────────────────────────────
   function create(map) {
     return {
@@ -434,8 +401,6 @@ const GridOverlays = (() => {
       osgrid:     new OSGrid(map),
       wab:        new WABGrid(map),
       pluscode:   new PlusCodeGrid(map),
-      cqzone:     new CQZoneGrid(map),
-      ituzone:    new ITUZoneGrid(map),
     };
   }
 

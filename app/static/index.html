@@ -40,16 +40,6 @@
         </div>
       </div>
 
-      <!-- Map type selector -->
-      <div id="map-type-bar">
-        <span class="bar-label">MAP</span>
-        <div class="map-type-btns">
-          <button class="map-type-btn active" data-type="street">Street</button>
-          <button class="map-type-btn" data-type="satellite">Satellite</button>
-          <button class="map-type-btn" data-type="topo">Topo</button>
-        </div>
-      </div>
-
       <!-- Grid overlays -->
       <div id="grid-panel">
         <div class="panel-label">GRID OVERLAYS</div>
@@ -72,19 +62,27 @@
         </div>
       </div>
 
+      <!-- Tabs -->
+      <div id="sidebar-tabs" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="locate" role="tab">LOCATE</button>
+        <button type="button" class="tab-btn" data-tab="bearing" role="tab">BEARING</button>
+      </div>
+
+      <div class="tab-pane active" data-pane="locate">
+
       <!-- Input -->
       <div id="input-panel">
         <div class="panel-label">INPUT FORMAT</div>
         <select id="format-select">
+          <option value="town">Town / Place Name</option>
+          <option value="postcode">UK Postcode</option>
+          <option value="maidenhead">Maidenhead Grid Locator</option>
+          <option value="wab">WAB Square</option>
+          <option value="osgrid">OS Grid Reference</option>
+          <option value="pluscode">Plus Code (Open Location Code)</option>
           <option value="latlon_dd">Lat/Lon — Decimal Degrees</option>
           <option value="latlon_dms">Lat/Lon — Degrees Minutes Seconds</option>
           <option value="latlon_dm">Lat/Lon — Degrees Decimal Minutes</option>
-          <option value="maidenhead">Maidenhead Grid Locator</option>
-          <option value="postcode">UK Postcode</option>
-          <option value="town">Town / Place Name</option>
-          <option value="osgrid">OS Grid Reference</option>
-          <option value="wab">WAB Square</option>
-          <option value="pluscode">Plus Code (Open Location Code)</option>
         </select>
 
         <div id="input-area"></div>
@@ -109,11 +107,68 @@
         <div id="results-grid"></div>
       </div>
 
+      </div><!-- /locate pane -->
+
+      <div class="tab-pane" data-pane="bearing">
+        <div id="bearing-panel">
+          <div class="brg-point" data-slot="A">
+            <div class="panel-label">
+              <span class="brg-title"><span class="brg-badge brg-badge--a">A</span>FROM</span>
+              <button type="button" class="brg-pick-btn" title="Next map click sets point A">PICK ON MAP</button>
+            </div>
+            <select class="brg-format" aria-label="Point A input format"></select>
+            <div class="brg-input-area"></div>
+            <div class="brg-point-foot">
+              <span class="brg-point-status">Not set</span>
+              <button type="button" class="brg-set-btn">SET A</button>
+            </div>
+          </div>
+
+          <div class="brg-point" data-slot="B">
+            <div class="panel-label">
+              <span class="brg-title"><span class="brg-badge brg-badge--b">B</span>TO</span>
+              <button type="button" class="brg-pick-btn" title="Next map click sets point B">PICK ON MAP</button>
+            </div>
+            <select class="brg-format" aria-label="Point B input format"></select>
+            <div class="brg-input-area"></div>
+            <div class="brg-point-foot">
+              <span class="brg-point-status">Not set</span>
+              <button type="button" class="brg-set-btn">SET B</button>
+            </div>
+          </div>
+
+          <div class="brg-actions">
+            <button type="button" id="brg-swap" class="brg-action-btn">⇅ SWAP</button>
+            <button type="button" id="brg-clear" class="brg-action-btn">✕ CLEAR</button>
+          </div>
+          <div id="brg-error"></div>
+        </div>
+
+        <div id="brg-result" class="hidden">
+          <div class="panel-label">BEARING &amp; DISTANCE</div>
+          <div class="brg-headline">
+            <svg id="brg-arrow" width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+              <circle cx="23" cy="23" r="21" fill="none" stroke="currentColor" stroke-width="1" opacity="0.35"/>
+              <path d="M23 4 L29 26 L23 22 L17 26 Z" fill="currentColor"/>
+            </svg>
+            <div class="brg-head-col">
+              <div class="brg-big" id="brg-head-bearing"></div>
+              <div class="brg-small" id="brg-head-compass"></div>
+            </div>
+            <div class="brg-head-col brg-head-right">
+              <div class="brg-big" id="brg-head-dist"></div>
+              <div class="brg-small" id="brg-head-dist-sub"></div>
+            </div>
+          </div>
+          <div id="brg-rows"></div>
+        </div>
+      </div><!-- /bearing pane -->
+
       <div id="map-hint">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
           <path d="M8 1L10 6H15L11 9.5L12.5 15L8 12L3.5 15L5 9.5L1 6H6L8 1Z" stroke="currentColor" stroke-width="1.2" fill="none"/>
         </svg>
-        Click anywhere on the map to decode that location
+        <span id="map-hint-text">Click anywhere on the map to decode that location</span>
       </div>
 
       <div id="credit">
@@ -142,6 +197,7 @@
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="/js/conversions.js"></script>
   <script src="/js/grids.js"></script>
+  <script src="/js/bearing.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

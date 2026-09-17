@@ -72,6 +72,22 @@ const map = L.map('map', {
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+// Map type switcher floats over the map's top-right corner.
+const MapTypeControl = L.Control.extend({
+  options: { position: 'topright' },
+  onAdd() {
+    const div = L.DomUtil.create('div', 'map-type-control');
+    div.innerHTML = Object.entries(TILE_LAYERS)
+      .map(([key, cfg]) => `<button type="button" class="map-type-btn" data-type="${key}">${cfg.label}</button>`)
+      .join('');
+    // Clicking a button must not also drop a marker on the map.
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+    return div;
+  },
+});
+new MapTypeControl().addTo(map);
+
 // ── GRID OVERLAYS ─────────────────────────────────────────
 const grids = GridOverlays.create(map);
 
@@ -124,12 +140,17 @@ function updateTileLayer() {
 // tile layer once the saved map type is known. Calling it here as well built
 // the layer twice on every load.
 
+let activeTab = 'locate';
 let marker = null;
+let locatedPoint = null;
 const customIcon = L.divIcon({ className: 'custom-marker', iconSize: [14, 14], iconAnchor: [7, 7] });
 
 function placeMarker(lat, lon) {
   if (marker) map.removeLayer(marker);
-  marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
+  locatedPoint = { lat, lon };
+  marker = L.marker([lat, lon], { icon: customIcon });
+  // The bearing tab draws its own A/B markers, so keep this one off the map there.
+  if (activeTab === 'locate') marker.addTo(map);
 }
 
 // ── MAP TYPE BUTTONS ─────────────────────────────────────────
@@ -163,6 +184,12 @@ function geolocate() {
       btn.classList.remove('locating');
       btn.title = 'Use my location';
       const { latitude: lat, longitude: lon } = pos.coords;
+      if (activeTab === 'bearing') {
+        placeMarker(lat, lon);
+        renderResults(lat, lon);
+        bearing.setHome(lat, lon);
+        return;
+      }
       map.setView([lat, lon], 13);
       showPoint(lat, lon);
     },
@@ -180,52 +207,65 @@ function geolocate() {
   );
 }
 
-document.getElementById('locate-me-btn').addEventListener('click', geolocate);
+document.getElementById('locate-me-btn').addEventListener('click', (e) => {
+  // The button sits inside the brand bar, which toggles the mobile drawer.
+  e.stopPropagation();
+  geolocate();
+});
 
 // ── INPUT TEMPLATES ──────────────────────────────────────────
+// Each template takes an id prefix so the Locate and Bearing tabs can render
+// the same fields side by side: inputs get ids `${p}1` and `${p}2`.
 const inputTemplates = {
-  latlon_dd: () => `
+  latlon_dd: (p) => `
     <div class="input-label">Latitude</div>
-    <input type="text" id="inp1" placeholder="e.g. 51.5074" />
+    <input type="text" id="${p}1" placeholder="e.g. 51.5074" />
     <div class="input-label">Longitude</div>
-    <input type="text" id="inp2" placeholder="e.g. -0.1278" />`,
+    <input type="text" id="${p}2" placeholder="e.g. -0.1278" />`,
 
-  latlon_dms: () => `
+  latlon_dms: (p) => `
     <div class="input-label">Latitude (DMS)</div>
-    <input type="text" id="inp1" placeholder="e.g. 51° 30' 26.4&quot; N" />
+    <input type="text" id="${p}1" placeholder="e.g. 51° 30' 26.4&quot; N" />
     <div class="input-label">Longitude (DMS)</div>
-    <input type="text" id="inp2" placeholder="e.g. 0° 7' 40.0&quot; W" />`,
+    <input type="text" id="${p}2" placeholder="e.g. 0° 7' 40.0&quot; W" />`,
 
-  latlon_dm: () => `
+  latlon_dm: (p) => `
     <div class="input-label">Latitude (DDM)</div>
-    <input type="text" id="inp1" placeholder="e.g. 51° 30.4400' N" />
+    <input type="text" id="${p}1" placeholder="e.g. 51° 30.4400' N" />
     <div class="input-label">Longitude (DDM)</div>
-    <input type="text" id="inp2" placeholder="e.g. 0° 7.6667' W" />`,
+    <input type="text" id="${p}2" placeholder="e.g. 0° 7.6667' W" />`,
 
-  maidenhead: () => `
+  maidenhead: (p) => `
     <div class="input-label">Maidenhead Grid Locator</div>
-    <input type="text" id="inp1" placeholder="e.g. IO91WM" style="text-transform:uppercase" />`,
+    <input type="text" id="${p}1" placeholder="e.g. IO91WM" style="text-transform:uppercase" />`,
 
-  postcode: () => `
+  postcode: (p) => `
     <div class="input-label">UK Postcode</div>
-    <input type="text" id="inp1" placeholder="e.g. SW1A 1AA" style="text-transform:uppercase" />`,
+    <input type="text" id="${p}1" placeholder="e.g. SW1A 1AA" style="text-transform:uppercase" />`,
 
-  town: () => `
+  town: (p) => `
     <div class="input-label">Town / Place Name</div>
-    <input type="text" id="inp1" placeholder="e.g. Manchester, UK" />`,
+    <input type="text" id="${p}1" placeholder="e.g. Manchester, UK" />`,
 
-  osgrid: () => `
+  osgrid: (p) => `
     <div class="input-label">OS Grid Reference</div>
-    <input type="text" id="inp1" placeholder="e.g. TQ 30081 80861" style="text-transform:uppercase" />`,
+    <input type="text" id="${p}1" placeholder="e.g. TQ 30081 80861" style="text-transform:uppercase" />`,
 
-  wab: () => `
+  wab: (p) => `
     <div class="input-label">WAB Square</div>
-    <input type="text" id="inp1" placeholder="e.g. SP45" style="text-transform:uppercase" />`,
+    <input type="text" id="${p}1" placeholder="e.g. SP45" style="text-transform:uppercase" />`,
 
-  pluscode: () => `
+  pluscode: (p) => `
     <div class="input-label">Plus Code (Open Location Code)</div>
-    <input type="text" id="inp1" placeholder="e.g. 9C3XGV4C+XV" style="text-transform:uppercase" />`,
+    <input type="text" id="${p}1" placeholder="e.g. 9C3XGV4C+XV" style="text-transform:uppercase" />`,
 };
+
+function renderFormatInputs(container, fmt, idPrefix, onEnter) {
+  container.innerHTML = inputTemplates[fmt]?.(idPrefix) || '';
+  container.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') onEnter(); });
+  });
+}
 
 // ── UI LOGIC ─────────────────────────────────────────────────
 const formatSelect = document.getElementById('format-select');
@@ -238,12 +278,8 @@ const resultsCoords = document.getElementById('results-coords');
 const loading      = document.getElementById('loading');
 
 function renderInputs() {
-  const fmt = formatSelect.value;
-  inputArea.innerHTML = inputTemplates[fmt]?.() || '';
+  renderFormatInputs(inputArea, formatSelect.value, 'inp', locateAction);
   errorMsg.textContent = '';
-  inputArea.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') locateAction(); });
-  });
 }
 
 formatSelect.addEventListener('change', renderInputs);
@@ -260,8 +296,12 @@ function setError(msg)  { errorMsg.textContent = msg; }
   function isMobile() { return window.innerWidth < 600; }
 
   function openDrawer()  { sidebar.classList.add('drawer-open'); }
-  function closeDrawer() { sidebar.classList.remove('drawer-open'); }
-  function toggleDrawer(){ sidebar.classList.toggle('drawer-open'); }
+  // Collapsed, only the top of the drawer peeks out, so scroll back to the
+  // brand bar or the peek shows whatever content the user had scrolled to.
+  function closeDrawer() { sidebar.classList.remove('drawer-open'); sidebar.scrollTop = 0; }
+  function toggleDrawer(){
+    if (sidebar.classList.contains('drawer-open')) closeDrawer(); else openDrawer();
+  }
 
   // Tap the brand bar to toggle on mobile
   brand.addEventListener('click', () => { if (isMobile()) toggleDrawer(); });
@@ -317,28 +357,33 @@ async function resolvePostcode(postcode) {
   return { lat: data.result.latitude, lon: data.result.longitude };
 }
 
+// ── RESOLVE INPUT ────────────────────────────────────────────
+async function resolveInput(fmt, inp1, inp2) {
+  let r;
+  switch (fmt) {
+    case 'latlon_dd':  r = Conv.parseDD(inp1, inp2);       break;
+    case 'latlon_dms': r = Conv.parseDMSPair(inp1, inp2);  break;
+    case 'latlon_dm':  r = Conv.parseDMPair(inp1, inp2);   break;
+    case 'maidenhead': r = Conv.fromMaidenhead(inp1);      break;
+    case 'postcode':   r = await resolvePostcode(inp1);    break;
+    case 'town':       r = await geocodeNominatim(inp1);   break;
+    case 'osgrid':     r = Conv.fromOSGridRef(inp1);       break;
+    case 'wab':        r = Conv.fromWAB(inp1);             break;
+    case 'pluscode':   r = Conv.decodePlusCodes(inp1);     break;
+    default: throw new Error('Unknown format');
+  }
+  assertLatLon(r.lat, r.lon);
+  return { lat: r.lat, lon: r.lon };
+}
+
 // ── LOCATE ACTION ────────────────────────────────────────────
 async function locateAction() {
   setError('');
-  const fmt  = formatSelect.value;
   const inp1 = document.getElementById('inp1')?.value?.trim();
   const inp2 = document.getElementById('inp2')?.value?.trim();
   showLoading(true);
   try {
-    let lat, lon;
-    switch (fmt) {
-      case 'latlon_dd':  { const r = Conv.parseDD(inp1, inp2);       lat = r.lat; lon = r.lon; break; }
-      case 'latlon_dms': { const r = Conv.parseDMSPair(inp1, inp2);  lat = r.lat; lon = r.lon; break; }
-      case 'latlon_dm':  { const r = Conv.parseDMPair(inp1, inp2);   lat = r.lat; lon = r.lon; break; }
-      case 'maidenhead': { const r = Conv.fromMaidenhead(inp1);       lat = r.lat; lon = r.lon; break; }
-      case 'postcode':   { const r = await resolvePostcode(inp1);     lat = r.lat; lon = r.lon; break; }
-      case 'town':       { const r = await geocodeNominatim(inp1);    lat = r.lat; lon = r.lon; break; }
-      case 'osgrid':     { const r = Conv.fromOSGridRef(inp1);        lat = r.lat; lon = r.lon; break; }
-      case 'wab':        { const r = Conv.fromWAB(inp1);              lat = r.lat; lon = r.lon; break; }
-      case 'pluscode':   { const r = Conv.decodePlusCodes(inp1);       lat = r.lat; lon = r.lon; break; }
-      default: throw new Error('Unknown format');
-    }
-    assertLatLon(lat, lon);
+    const { lat, lon } = await resolveInput(formatSelect.value, inp1, inp2);
     showPoint(lat, lon);
   } catch (e) {
     setError(e.message);
@@ -377,20 +422,21 @@ function renderResults(lat, lon) {
   resultsGrid.innerHTML = '';
   resultsPanel.classList.remove('hidden');
 
-  formats.forEach((item, i) => {
-    const div = document.createElement('div');
-    div.className = 'result-item';
-    div.style.animationDelay = `${i * 40}ms`;
-    div.innerHTML = `
-      <span class="result-label">${escapeHtml(item.label)}</span>
-      <span class="result-value">${escapeHtml(item.value)}</span>
-      <button class="copy-btn" title="Copy">⧉</button>
-    `;
-    const btn = div.querySelector('.copy-btn');
-    btn.dataset.value = item.value;
-    btn.addEventListener('click', () => copyVal(btn, btn.dataset.value));
-    resultsGrid.appendChild(div);
-  });
+  formats.forEach((item, i) => renderResultItem(resultsGrid, item.label, item.value, i));
+}
+
+function renderResultItem(container, label, value, i) {
+  const div = document.createElement('div');
+  div.className = 'result-item';
+  div.style.animationDelay = `${i * 40}ms`;
+  div.innerHTML = `
+    <span class="result-label">${escapeHtml(label)}</span>
+    <span class="result-value">${escapeHtml(value)}</span>
+    <button class="copy-btn" title="Copy">⧉</button>
+  `;
+  const btn = div.querySelector('.copy-btn');
+  btn.addEventListener('click', () => copyVal(btn, value));
+  container.appendChild(div);
 }
 
 function copyVal(btn, val) {
@@ -437,10 +483,54 @@ function queueReverseGeocode(lat, lon) {
 }
 
 map.on('click', (e) => {
+  if (activeTab === 'bearing') {
+    // Wrap so a click on a repeated world copy still yields a valid longitude.
+    const { lat, lng } = e.latlng.wrap();
+    bearing.handleMapClick(lat, lng);
+    return;
+  }
   const { lat, lng: lon } = e.latlng;
   placeMarker(lat, lon);
   renderResults(lat, lon);
   queueReverseGeocode(lat, lon);
+});
+
+// ── BEARING TOOL ─────────────────────────────────────────────
+const mapHintText = document.getElementById('map-hint-text');
+const LOCATE_HINT = 'Click anywhere on the map to decode that location';
+
+const bearing = BearingTool.create(map, {
+  resolveInput,
+  renderFormatInputs,
+  renderResultItem,
+  showLoading,
+  formatOptionsHtml: formatSelect.innerHTML,
+  getLocatedPoint: () => locatedPoint,
+  setHint: (text) => { mapHintText.textContent = text; },
+});
+
+// ── SIDEBAR TABS ─────────────────────────────────────────────
+function setTab(name) {
+  if (name !== 'locate' && name !== 'bearing') name = 'locate';
+  activeTab = name;
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p =>
+    p.classList.toggle('active', p.dataset.pane === name));
+
+  if (name === 'bearing') {
+    if (marker) map.removeLayer(marker);
+    bearing.activate();
+  } else {
+    bearing.deactivate();
+    if (marker) marker.addTo(map);
+    mapHintText.textContent = LOCATE_HINT;
+  }
+  localStorage.setItem('gp-tab', name);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => setTab(btn.dataset.tab));
 });
 
 // ── RESTORE SAVED PREFS & AUTO-LOCATE ────────────────────────
@@ -449,6 +539,8 @@ map.on('click', (e) => {
   const savedMapType   = TILE_LAYERS[savedType] ? savedType : DEFAULT_MAP_TYPE;
   const savedTheme     = localStorage.getItem('gp-theme');      // null = never set
   const userHasSetTheme = savedTheme !== null;
+
+  setTab(localStorage.getItem('gp-tab'));
 
   // Apply saved map type
   currentMapType = savedMapType;
@@ -472,6 +564,7 @@ map.on('click', (e) => {
         map.setView([lat, lon], 13);
         placeMarker(lat, lon);
         renderResults(lat, lon);
+        bearing.offerHome(lat, lon);
 
         // Only override theme if user hasn't manually picked one this session
         if (!userHasSetTheme) {

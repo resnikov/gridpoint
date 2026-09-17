@@ -54,6 +54,14 @@ docker run -p 9000:8080 gridpoint
 **To decode a map point:**
 - Click anywhere on the map — all formats for that location appear in the sidebar
 
+**To get bearing and distance between two points:**
+1. Open the **BEARING** tab — point A starts at your located point, if there is one
+2. Set A and B by typing a location in any input format and pressing **SET**, or by clicking the map (the highlighted point is the one the next click sets; use **PICK ON MAP** to choose)
+3. The sidebar shows the true bearing both ways, plus the great-circle distance in km, miles and nautical miles; the map draws the great-circle path
+
+**To change the map style:**
+- Use the Street / Satellite / Topo switch in the top-right corner of the map
+
 **To copy a format:**
 - Click the ⧉ icon next to any result
 

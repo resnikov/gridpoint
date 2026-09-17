@@ -177,34 +177,22 @@ html, body {
 #theme-toggle:hover { color: var(--accent); border-color: var(--accent); background: var(--btn-hover); }
 .theme-icon { font-size: 13px; }
 
-/* ── MAP TYPE BAR ── */
-#map-type-bar {
+/* ── MAP TYPE CONTROL (floats top-right on the map) ── */
+.leaflet-control.map-type-control {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  flex-shrink: 0;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   transition: background 0.3s, border-color 0.3s;
 }
 
-.bar-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.map-type-btns { display: flex; gap: 4px; flex: 1; }
-
 .map-type-btn {
-  flex: 1;
-  padding: 7px 4px;
-  background: var(--btn-bg);
-  border: 1px solid var(--border);
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 5px;
   color: var(--muted);
   font-family: var(--font-mono);
@@ -214,11 +202,42 @@ html, body {
   transition: all 0.15s;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
-  min-height: 34px;
+  min-height: 30px;
 }
 
-.map-type-btn:hover  { color: var(--text); border-color: var(--muted); }
+.map-type-btn:hover  { color: var(--text); background: var(--btn-hover); }
 .map-type-btn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+
+/* ── SIDEBAR TABS ── */
+#sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 11px 8px 9px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 40px;
+}
+
+.tab-btn:hover  { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-pane { display: none; flex-direction: column; flex-shrink: 0; }
+.tab-pane.active { display: flex; }
 
 /* ── GRID OVERLAY PANEL ── */
 #grid-panel {
@@ -437,6 +456,171 @@ input::placeholder { color: var(--muted); font-family: var(--font-body); font-si
 .copy-btn:hover { color: var(--accent); }
 .result-item.copied { border-color: var(--accent); }
 
+/* ── BEARING PANEL ── */
+#bearing-panel {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.brg-point {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.brg-point.picking { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+
+.brg-title { display: flex; align-items: center; gap: 7px; }
+
+.brg-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.brg-badge--a, .brg-marker--a { background: var(--accent); color: var(--accent-fg); }
+.brg-badge--b, .brg-marker--b { background: #ff6b35; color: #0d0f14; }
+
+.brg-pick-btn {
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brg-pick-btn:hover { color: var(--text); border-color: var(--muted); }
+.brg-point.picking .brg-pick-btn { color: var(--accent); border-color: var(--accent); }
+
+.brg-input-area { display: flex; flex-direction: column; gap: 8px; }
+
+.brg-point-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.brg-point-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brg-point-status.set { color: var(--text); }
+
+.brg-set-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brg-set-btn:hover { opacity: 0.88; }
+
+.brg-actions { display: flex; gap: 6px; }
+
+.brg-action-btn {
+  flex: 1;
+  padding: 8px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brg-action-btn:hover { color: var(--text); border-color: var(--muted); background: var(--btn-hover); }
+
+#brg-error {
+  font-size: 11px;
+  color: var(--error);
+  font-family: var(--font-mono);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+#brg-error:empty { display: none; }
+
+#brg-result { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+#brg-result.hidden { display: none; }
+
+.brg-headline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+#brg-arrow {
+  flex-shrink: 0;
+  color: var(--accent);
+  transition: transform 0.4s ease;
+}
+
+.brg-head-col  { min-width: 0; }
+.brg-head-right { margin-left: auto; text-align: right; }
+
+.brg-big {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--text);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.brg-small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+#brg-rows { display: flex; flex-direction: column; gap: 5px; }
+
 /* ── MAP HINT ── */
 #map-hint {
   display: flex;
@@ -566,6 +750,36 @@ input::placeholder { color: var(--muted); font-family: var(--font-body); font-si
   box-shadow: 0 0 14px var(--accent);
 }
 
+.brg-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,0.7);
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.brg-line {
+  stroke: var(--accent);
+  stroke-dasharray: 8 6;
+}
+
+.leaflet-tooltip.brg-line-label {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+
+.leaflet-tooltip.brg-line-label::before { display: none; }
+
 /* ── GRID LABELS ── */
 .grid-label {
   font-family: 'Syne Mono', monospace;
@@ -681,31 +895,23 @@ input::placeholder { color: var(--muted); font-family: var(--font-body); font-si
   .brand-sub { display: none; }
 
   /* Tighten up all padding on mobile */
-  #map-type-bar  { padding: 8px 16px; }
   #grid-panel    { padding: 10px 16px; }
   #input-panel   { padding: 12px 16px; }
   #results-panel { padding: 12px 16px; }
+  #bearing-panel { padding: 12px 16px; }
+  #brg-result    { padding: 12px 16px; }
   #map-hint      { display: none; }
   #credit        { padding: 8px 16px 16px; }
 
   /* Slightly larger tap targets */
-  .map-type-btn   { padding: 8px 6px; font-size: 11px; }
+  .map-type-btn   { padding: 7px 8px; }
   .grid-toggle-btn { padding: 7px 10px; }
 
-  /* Floating locate button visible over the map when drawer is collapsed */
-  #locate-me-btn {
-    position: fixed;
-    bottom: calc(var(--drawer-peek) + 12px);
-    right: 16px;
-    z-index: 200;
-    background: var(--surface);
-    border-color: var(--border);
-    border-radius: 50%;
-    width: 46px;
-    height: 46px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-    padding: 0;
-  }
+  /* The locate button stays in the brand bar, which is visible even with the
+     drawer collapsed. (It used to be position:fixed, but the drawer's
+     transform makes the drawer its containing block, so it was pushed off
+     screen when collapsed and sat over the panel content when open.) */
+  #locate-me-btn { min-width: 40px; min-height: 40px; }
 
   /* Move zoom controls up so they don't clash with the drawer */
   .leaflet-bottom.leaflet-right {
